@@ -1,23 +1,110 @@
-import logo from './logo.svg';
+import React, { useState, useEffect } from "react"
 import './App.css';
+import axios from 'axios';
+import Input from "./components/input";
+import Todo from "./components/todo";
 
 function App() {
+
+  const baseUrl = "http://localhost:8080"
+
+  const [todos, setTodos] = useState([]);
+  const [input, setInput] = useState("");
+
+  useEffect(() => {
+    getTodos();
+  }, []);
+
+  async function getTodos() {
+    await axios
+      .get(baseUrl + "/todo")
+      .then((response) => {
+        console.log(response.data.data)
+        setTodos(response.data.data)
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+
+  }
+
+  function createTodo(e) {
+    e.preventDefault();
+    
+    const insertTodo = async () => {
+      await axios
+            .post(baseUrl + "/todo", {
+              name : input
+            })
+            .then((response) => {
+              console.log(response.data)
+              setInput("");
+              getTodos();
+            })
+            .catch((error) => {
+              console.log(error);
+            })
+    }
+
+    insertTodo();
+  }
+
+  function updateTodo(id) {
+    const updateTodo = async () => {
+      await axios
+            .put(baseUrl + "/todo/" + id, {})
+            .then((response) => {
+              setTodos(
+                todos.map((todo) => 
+                  todo.id === id ? { ...todo, completed: !todo.completed } : todo
+                )
+              )
+            })
+            .catch((error) => {
+              console.error(error);
+            })
+    }
+
+    updateTodo();
+  }
+
+  function deleteTodo(id) {
+    const deleteTodo = async () => {
+      await axios
+            .delete(baseUrl + "/todo/" + id, {})
+            .then((response) => {
+              // getTodos();
+              setTodos(
+                todos.filter((todo) => todo.id !== id)
+              )
+            })
+    }
+    deleteTodo();
+  }
+
+  function changeText(e){
+    e.preventDefault();
+    setInput(e.target.value)
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+        <h1>TODO LIST</h1>
+        <Input handleSubmit={createTodo} input={input} handleChange={changeText} />
+
+        {
+          todos
+          ? todos.map((todo) => {
+            return (
+              <Todo 
+              key={todo.id}
+              todo={todo} 
+              handleClick={() => updateTodo(todo.id)} 
+              handleDelete={() => deleteTodo(todo.id)}/>
+            )
+          })
+          : null
+        }
     </div>
   );
 }
